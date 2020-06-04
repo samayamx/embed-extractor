@@ -1,0 +1,17 @@
+{
+    "name": "samayamx/embed-extractor",
+    "description": "Prototype to extract basic embed properties from 3rd party content",
+    "type": "library",
+    "require-dev": {
+        "phpunit/phpunit": "^9.1"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jesus E. Franco Martinez",
+            "email": "tezcatl@fedoraproject.org"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {}
+}
