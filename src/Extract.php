@@ -16,6 +16,8 @@ class Extract
     /** @var array */
     protected $cachedResponses = [];
 
+    protected $cachedOembedData = [];
+
     /**
      * Extract constructor.
      * @param $useragent
@@ -27,30 +29,51 @@ class Extract
             : $useragent;
     }
 
-
-    public function getOGImage(string $url): ?string
+    public function getImage(string $url, string $property = 'og:image'): ?string
     {
-        if (!filter_var($url, \FILTER_VALIDATE_URL)) {
-            throw new \InvalidArgumentException(sprintf('Invalid url %s', $url));
-        }
+        $this->validateUrl($url);
+
+        $filter = "//meta[@property='${property}']";
+
         $crawler = $this->getCrawler($url);
-        $node = $crawler->filterXPath("//meta[@property='og:image']");
+        $node = $crawler->filterXPath($filter);
         $content = $node->extract(['content']);
 
         return $content[0];
     }
 
-    protected function getClient(string $url): Client
+    public function getHtml(string $url): ?string
     {
-        if (isset($this->cachedClients[$url])) {
-            return $this->cachedClients[$url];
-        }
-        $client = new Client([
-          'base_uri' => $url
-        ]);
+        $this->validateUrl($url);
 
-        $this->cachedClients[$url] = $client;
-        return $this->cachedClients[$url];
+        $oembedData = $this->getOembedData($url);
+
+        return $oembedData['html'];
+    }
+
+    protected function getOembedData(string $url): ?array
+    {
+        if (isset($this->cachedOembedData[$url])) {
+            return $this->cachedOembedData[$url];
+        }
+
+        $crawler = $this->getCrawler($url);
+        $node = $crawler->filterXPath("//link[@rel='alternate'][@type='application/json+oembed']");
+        $content = $node->extract(['href']);
+
+        $oembedUrl = $content[0];
+
+        $jsonResponse = $this->getUrlData($oembedUrl);
+
+        $this->cachedOembedData[$url] = json_decode($jsonResponse, true);
+        return $this->cachedOembedData[$url];
+    }
+
+    public function validateUrl(string $url)
+    {
+        if (!filter_var($url, \FILTER_VALIDATE_URL)) {
+            throw new \InvalidArgumentException(sprintf('Invalid url %s', $url));
+        }
     }
 
     protected function getCrawler(string $url): Crawler
