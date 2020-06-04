@@ -19,7 +19,8 @@
     },
     "minimum-stability": "stable",
     "require": {
-        "symfony/dom-crawler": "^5.1",
-        "guzzlehttp/guzzle": "^6.5"
+        "ext-curl": "*",
+        "ext-json": "*",
+        "symfony/dom-crawler": "^5.1"
     }
 }

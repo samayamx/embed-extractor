@@ -20,6 +20,11 @@ class ExtractTest extends TestCase
         );
     }
 
+    public function testGetHtml()
+    {
+        $this->markTestSkipped('not implemented yet');
+    }
+
     public function testInvalidUrl()
     {
         $this->expectException(\InvalidArgumentException::class);
