@@ -12,6 +12,14 @@
             "email": "tezcatl@fedoraproject.org"
         }
     ],
+    "autoload": {
+        "psr-4": {
+            "Samaya\\Embed\\": "src/"
+        }
+    },
     "minimum-stability": "stable",
-    "require": {}
+    "require": {
+        "symfony/dom-crawler": "^5.1",
+        "guzzlehttp/guzzle": "^6.5"
+    }
 }
