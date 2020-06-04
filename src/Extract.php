@@ -29,11 +29,11 @@ class Extract
             : $useragent;
     }
 
-    public function getImage(string $url, string $property = 'og:image'): ?string
+    public function getImage(string $url, string $property = null): ?string
     {
         $this->validateUrl($url);
 
-        $filter = "//meta[@property='${property}']";
+        $filter = $this->getMetaImageFilter($property ?? 'og:image');
 
         $crawler = $this->getCrawler($url);
         $node = $crawler->filterXPath($filter);
@@ -42,13 +42,25 @@ class Extract
         return $content[0];
     }
 
+    protected function getMetaImageFilter(string $property = 'og:image'): string
+    {
+        switch ($property) {
+            case 'og:image':
+                return $filter = "//meta[@property='${property}']";
+            case 'twitter:image':
+                return $filter = "//meta[@name='${property}']";
+            default:
+                return '';
+        }
+    }
+
     public function getHtml(string $url): ?string
     {
         $this->validateUrl($url);
 
         $oembedData = $this->getOembedData($url);
 
-        return $oembedData['html'];
+        return str_replace("\n", "", $oembedData['html']);
     }
 
     protected function getOembedData(string $url): ?array
