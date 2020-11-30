@@ -6,7 +6,7 @@ use Symfony\Component\DomCrawler\Crawler;
 
 class Extract
 {
-    const USER_AGENT = 'Samaya-Embed 0.1';
+    const USER_AGENT = 'Samaya-Embed 0.3';
 
     protected $useragent;
 
@@ -134,10 +134,34 @@ class Extract
         $body = substr($response, $headerSize);
         curl_close($handler);
 
-        if (empty($body) || $status != '200') {
-            throw new \RuntimeException($status . ': Invalid response for ' . $url);
+        if ($status !== 200) {
+            return $this->handleErrorResponse($body, $url, $status);
         }
 
         return $body;
+    }
+
+    protected function handleErrorResponse(string $body, string $url, $status): string
+    {
+        $maybeFBopenGraphError = $this->maybeFacebookAccessTokenMissing($body);
+        if ($maybeFBopenGraphError) {
+            throw new \DomainException($maybeFBopenGraphError, $status);
+        }
+        throw new \RuntimeException($status . ': Invalid response for ' . $url, $status);
+    }
+
+    protected function maybeFacebookAccessTokenMissing(string $body): ?string
+    {
+        $response = json_decode($body, true);
+        if (! isset($response['error'])) {
+            return null;
+        }
+        $error = $response['error'];
+
+        if (isset($error['type']) && $error['type'] === 'OAuthException') {
+            return $error['message'];
+        }
+        error_log(var_export($response, true), 0);
+        return null;
     }
 }
