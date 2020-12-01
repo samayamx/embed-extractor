@@ -18,6 +18,16 @@
         }
     },
     "minimum-stability": "stable",
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Samaya\\Embed\\OEmbedExtractProvider"
+            ],
+            "aliases": {
+                "OEmbedExtract": "Samaya\\Embed\\OEmbedExtract"
+            }
+        }
+    },
     "require": {
         "ext-curl": "*",
         "ext-json": "*",

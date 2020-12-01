@@ -6,9 +6,12 @@ use Symfony\Component\DomCrawler\Crawler;
 
 class Extract
 {
-    const USER_AGENT = 'Samaya-Embed 0.1';
+    const USER_AGENT = 'Samaya-Embed 0.3';
 
     protected $useragent;
+
+    protected $fbAppId = '';
+    protected $fbAppSecret = '';
 
     /** @var Crawler[] */
     protected $cachedCrawlers = [];
@@ -22,11 +25,16 @@ class Extract
      * Extract constructor.
      * @param $useragent
      */
-    public function __construct(string $useragent = null)
-    {
+    public function __construct(
+      string $useragent = null,
+      ?string $fbAppId = null,
+      ?string $fbAppSecret = null
+    ) {
         $this->useragent = is_null($useragent)
             ? self::USER_AGENT
             : $useragent;
+        $this->fbAppId = $fbAppId;
+        $this->fbAppSecret = $fbAppSecret;
     }
 
     public function getImage(string $url, string $property = null): ?string
@@ -117,10 +125,10 @@ class Extract
         $options = [
           CURLOPT_USERAGENT => $this->useragent,
           CURLOPT_ENCODING => '',
-          CURLOPT_FOLLOWLOCATION => true,
+          CURLOPT_FOLLOWLOCATION => false,
         ];
 
-        $options[CURLOPT_URL] = $url;
+        $options[CURLOPT_URL] = $this->withAccessTokenForClosedOEmbed($url);
         $options[CURLOPT_HEADER] = true;
         $options[CURLOPT_RETURNTRANSFER] = 1;
 
@@ -130,14 +138,54 @@ class Extract
 
         $status = curl_getinfo($handler, CURLINFO_HTTP_CODE);
         $headerSize = curl_getinfo($handler, CURLINFO_HEADER_SIZE);
+        $redirectUrl = curl_getinfo($handler, CURLINFO_REDIRECT_URL);
 
         $body = substr($response, $headerSize);
         curl_close($handler);
 
-        if (empty($body) || $status != '200') {
-            throw new \RuntimeException($status . ': Invalid response for ' . $url);
+        if ($status === 302 && $redirectUrl) {
+            return $this->retrieveUrlData($redirectUrl);
+        }
+        if ($status !== 200) {
+            return $this->handleErrorResponse($body, $url, $status);
         }
 
         return $body;
+    }
+
+    protected function withAccessTokenForClosedOEmbed(string $url): string
+    {
+        return $this->isClosedFacebookEmbed($url)
+          ? $url . '&access_token=' . $this->fbAppId . '|' . $this->fbAppSecret
+          : $url;
+    }
+
+    protected function isClosedFacebookEmbed(string $url): bool
+    {
+        return boolval(preg_match('#^https://graph\.facebook\.com/v[1-9]+\.[0-9]+/oembed_[a-z]+\?#', $url));
+    }
+
+    protected function handleErrorResponse(string $body, string $url, $status): string
+    {
+        $maybeFBopenGraphError = $this->maybeFacebookAccessTokenMissing($body);
+        if ($maybeFBopenGraphError) {
+            throw new \DomainException($maybeFBopenGraphError, $status);
+        }
+        throw new \RuntimeException($status . ': Invalid response for ' . $url, $status);
+    }
+
+    protected function maybeFacebookAccessTokenMissing(string $body): ?string
+    {
+        $response = json_decode($body, true);
+        if (! isset($response['error'])) {
+            return null;
+        }
+        $error = $response['error'];
+
+        if (isset($error['type']) && $error['type'] === 'OAuthException') {
+            return $error['message'];
+        }
+        error_log(var_export($response, true), 0);
+        return null;
     }
 }
