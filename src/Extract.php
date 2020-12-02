@@ -47,6 +47,10 @@ class Extract
         $node = $crawler->filterXPath($filter);
         $content = $node->extract(['content']);
 
+        if (empty($content)) {
+            return null;
+        }
+
         return $content[0];
     }
 
@@ -81,6 +85,10 @@ class Extract
         $node = $crawler->filterXPath("//link[@rel='alternate'][@type='application/json+oembed']");
         $content = $node->extract(['href']);
 
+        if (empty($content)) {
+            return ['html' => '<p>Es posible que este contenido ya no esté disponible o no sea público</p>'];
+        }
+        
         $oembedUrl = $content[0];
 
         $jsonResponse = $this->getUrlData($oembedUrl);
