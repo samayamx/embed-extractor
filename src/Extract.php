@@ -86,10 +86,14 @@ class Extract
         $content = $node->extract(['href']);
 
         if (empty($content)) {
-            return ['html' => '<p>Es posible que este contenido ya no esté disponible o no sea público</p>'];
+            return ['html' => '<p>Por el momento este video no se puede reproducir en pantalla. Puedes compartirlo sin problemas en todas tus redes sociales. Gracias.</p>'];
         }
-        
+
         $oembedUrl = $content[0];
+
+        if (preg_match('/^http:\/\/www\.youtube\.com\/oembed/', $oembedUrl)) {
+            $oembedUrl = \mb_ereg_replace('http:', 'https:', $oembedUrl);
+        }
 
         $jsonResponse = $this->getUrlData($oembedUrl);
 
