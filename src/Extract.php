@@ -86,7 +86,7 @@ class Extract
         $content = $node->extract(['href']);
 
         if (empty($content)) {
-            return ['html' => '<p>Por el momento este video no se puede reproducir en pantalla. Puedes compartirlo sin problemas en todas tus redes sociales. Gracias.</p>'];
+            throw new \RuntimeException("Empty OEmbed data for: '${url}'");
         }
 
         $oembedUrl = $content[0];
